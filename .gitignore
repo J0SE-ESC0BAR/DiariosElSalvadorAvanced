@@ -1,4 +1,7 @@
 /bin/
-/credentials/
+credentials.json
 /DiariosOficiales/
 /obj/
+.gitattributes
+Reporte.txt
+token.json/
