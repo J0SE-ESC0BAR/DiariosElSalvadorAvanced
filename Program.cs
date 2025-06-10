@@ -63,24 +63,28 @@ namespace DiariosElSalvador
         {
             Console.WriteLine("=== DESCARGADOR DE DIARIOS OFICIALES DE EL SALVADOR ===\n");
             
-            // Inicializar Google Drive
-            Console.WriteLine(" Inicializando conexión con Google Drive...");
+            Console.WriteLine("Analizando diarios disponibles...");
+            var resumen = await DescubrirDiariosAsync();
+            MostrarYGuardarReporte(resumen);
+            
+            await Task.Delay(2000);
+            
+            // Inicializar Google Drive solo al momento de subir archivos
+            Console.WriteLine("\n🔗 Inicializando conexión con Google Drive...");
             if (!await InicializarGoogleDriveAsync())
             {
-                Console.WriteLine(" Error: No se pudo conectar a Google Drive. Verifica tu archivo credentials.json");
+                Console.WriteLine("Error: No se pudo conectar a Google Drive. Verifica tu archivo credentials.json");
+                Console.WriteLine("Solo se generará el reporte local.");
+                Console.WriteLine("\nProceso completado. Presione cualquier tecla para salir.");
+                Console.ReadKey();
                 return;
             }
             Console.WriteLine("Google Drive conectado exitosamente\n");
             
-            Console.WriteLine("Diarios disponibles...");
-            var resumen = await DescubrirDiariosAsync();
-            MostrarYGuardarReporte(resumen);
-            
-            await Task.Delay(2000); 
-            Console.WriteLine("Iniciando descarga y subida a Google Drive");
+            Console.WriteLine("⬇Iniciando descarga y subida a Google Drive");
             await DescargarYSubirDiariosAsync(resumen);
             
-            Console.WriteLine("\n Proceso completado. Presione cualquier tecla para salir.");
+            Console.WriteLine("\nProceso completado. Presione cualquier tecla para salir.");
             Console.ReadKey();
         }
 
@@ -92,7 +96,7 @@ namespace DiariosElSalvador
 
             for (int year = startYear; year <= endYear; year++)
             {
-                Console.Write($" Analizando año {year} --> ");
+                Console.Write($"Analizando año {year} --> ");
                 
                 var meses = await GetAvailableMonthsAsync(year);
                 if (!meses.Any())
@@ -120,7 +124,7 @@ namespace DiariosElSalvador
                 if (totalDiariosAnio > 0)
                 {
                     resumen.DiariosPorAnioYMes[year] = diariosDelAnio;
-                    Console.WriteLine($" {totalDiariosAnio} diarios encontrados");
+                    Console.WriteLine($"{totalDiariosAnio} diarios encontrados");
                 }
                 else
                 {
@@ -144,11 +148,11 @@ namespace DiariosElSalvador
             try
             {
                 File.WriteAllText("Reporte.txt", reporte, Encoding.UTF8);
-                Console.WriteLine($" Reporte guardado automáticamente en: {Path.GetFullPath("Reporte.txt")}");
+                Console.WriteLine($"Reporte guardado automáticamente en: {Path.GetFullPath("Reporte.txt")}");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" Error al guardar reporte: {ex.Message}");
+                Console.WriteLine($"Error al guardar reporte: {ex.Message}");
             }
         }
 
@@ -156,16 +160,16 @@ namespace DiariosElSalvador
         {
             var sb = new StringBuilder();
             sb.AppendLine("============================================================");
-            sb.AppendLine(" REPORTE DE DIARIOS OFICIALES DISPONIBLES");
+            sb.AppendLine("REPORTE DE DIARIOS OFICIALES DISPONIBLES");
             sb.AppendLine("============================================================");
-            sb.AppendLine($" Total de diarios encontrados: {resumen.TotalDiarios:N0}");
-            sb.AppendLine($" Años con diarios disponibles: {resumen.TotalAniosConDiarios}");
+            sb.AppendLine($"Total de diarios encontrados: {resumen.TotalDiarios:N0}");
+            sb.AppendLine($"Años con diarios disponibles: {resumen.TotalAniosConDiarios}");
             
             if (resumen.DiariosPorAnioYMes.Any())
             {
                 var anioMinimo = resumen.DiariosPorAnioYMes.Keys.Min();
                 var anioMaximo = resumen.DiariosPorAnioYMes.Keys.Max();
-                sb.AppendLine($" Período: {anioMinimo} - {anioMaximo}");
+                sb.AppendLine($"Período: {anioMinimo} - {anioMaximo}");
             }
             
             sb.AppendLine("============================================================");
@@ -180,7 +184,7 @@ namespace DiariosElSalvador
                 // Verificar que existe el archivo de credenciales
                 if (!File.Exists(CredentialsPath))
                 {
-                    Console.WriteLine($" Error: No se encontró el archivo {CredentialsPath}");
+                    Console.WriteLine($"Error: No se encontró el archivo {CredentialsPath}");
                     return false;
                 }
 
@@ -210,7 +214,7 @@ namespace DiariosElSalvador
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" Error al inicializar Google Drive: {ex.Message}");
+                Console.WriteLine($"Error al inicializar Google Drive: {ex.Message}");
                 return false;
             }
         }
@@ -251,7 +255,7 @@ namespace DiariosElSalvador
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" Error al crear/encontrar carpeta '{nombreCarpeta}': {ex.Message}");
+                Console.WriteLine($"Error al crear/encontrar carpeta '{nombreCarpeta}': {ex.Message}");
                 return null;
             }
         }
@@ -285,7 +289,7 @@ namespace DiariosElSalvador
             }
             catch (Exception ex)
             {
-                Console.WriteLine($" Error al subir '{nombreArchivo}': {ex.Message}");
+                Console.WriteLine($"Error al subir '{nombreArchivo}': {ex.Message}");
                 return false;
             }
         }
@@ -298,7 +302,7 @@ namespace DiariosElSalvador
             int errores = 0;
             int total = resumen.TotalDiarios;
 
-            Console.WriteLine($"Se descargaran {total:N0} diarios, esto taradara bastante tiempo\n");
+            Console.WriteLine($"Se descargaran {total:N0} diarios, esto tardará bastante tiempo\n");
 
             foreach (var anioDiarios in resumen.DiariosPorAnioYMes.OrderBy(x => x.Key))
             {
@@ -315,7 +319,7 @@ namespace DiariosElSalvador
                 var carpetaAnioId = await CrearOEncontrarCarpetaAsync(anio.ToString(), carpetaRaizDriveId);
                 if (string.IsNullOrEmpty(carpetaAnioId))
                 {
-                    Console.WriteLine($"  Error: No se pudo crear carpeta del año {anio} en Drive");
+                    Console.WriteLine($"Error: No se pudo crear carpeta del año {anio} en Drive");
                     continue;
                 }
 
@@ -350,14 +354,14 @@ namespace DiariosElSalvador
                             if (!string.IsNullOrEmpty(rutaArchivoLocal))
                             {
                                 descargados++;
-                                Console.Write("Descargado");
+                                Console.Write(" Descargado");
 
                                 // Subir a Google Drive
                                 bool subidoExitosamente = await SubirArchivoADriveAsync(rutaArchivoLocal, diario.NombreArchivo!, carpetaMesId);
                                 if (subidoExitosamente)
                                 {
                                     subidos++;
-                                    Console.WriteLine("Subido a Drive");
+                                    Console.WriteLine(" Subido a Drive");
                                     try
                                     {
                                         // Eliminar archivo local después de subir
@@ -376,23 +380,23 @@ namespace DiariosElSalvador
                             else
                             {
                                 errores++;
-                                Console.WriteLine("Error al descargar");
+                                Console.WriteLine(" Error al descargar");
                             }
                         }
                         catch (Exception ex)
                         {
                             errores++;
-                            Console.WriteLine($"Error: {ex.Message}");
+                            Console.WriteLine($" Error: {ex.Message}");
                         }
                         await Task.Delay(500); 
                     }
                 }
             }
-            Console.WriteLine($"\n RESUMEN FINAL:");
-            Console.WriteLine($" Descargados exitosamente: {descargados:N0}");
-            Console.WriteLine($" Subidos a Google Drive: {subidos:N0}");
-            Console.WriteLine($" Errores: {errores:N0}");
-            Console.WriteLine($" Carpeta en Google Drive: 'Diarios Oficiales El Salvador'");
+            Console.WriteLine($"\nRESUMEN FINAL:");
+            Console.WriteLine($"Descargados exitosamente: {descargados:N0}");
+            Console.WriteLine($"Subidos a Google Drive: {subidos:N0}");
+            Console.WriteLine($"Errores: {errores:N0}");
+            Console.WriteLine($"Carpeta en Google Drive: 'Diarios Oficiales El Salvador'");
         }
         private static async Task<string?> DescargarDiarioAsync(Diario diario, string directorioDestino)
         {
